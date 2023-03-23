@@ -59,12 +59,6 @@ jobs:
       name: 'production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v2
-        with:
-          name: python-app
-          path: .
-
       # Deploy Flask API and serve frontend using Gunicorn
       - name: Deploy Flask API and serve frontend
         uses: azure/webapps-deploy@v2
