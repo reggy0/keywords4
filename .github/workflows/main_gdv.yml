@@ -2,7 +2,7 @@
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 # More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
 
-name: Build and deploy Python app to Azure Web App - gdv
+name: Build and deploy Flask API and frontend to Azure Web App - gdv
 
 on:
   push:
@@ -11,53 +11,87 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
 
-      - name: Set up Python version
+      # Build the HTML/CSS/Bootstrap frontend
+      - name: Build Frontend
+        uses: tgmarinho/react-gh-pages@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: './frontend'
+          build_dir: './frontend/build'
+          
+      # Build the Flask API backend
+      - name: Set up Python version and install dependencies
         uses: actions/setup-python@v1
         with:
           python-version: '3.9'
-
-      - name: Create and start virtual environment
+      - name: Install dependencies
         run: |
           python -m venv venv
           source venv/bin/activate
-      
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-        
-      # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
-      
+          pip install -r requirements.txt
+          
+      # Run Flask API
+      - name: Start Flask API server
+        run: |
+          export FLASK_APP=app.py
+          flask run &
+          
+      # Upload artifact for deployment jobs
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v2
         with:
           name: python-app
           path: |
-            . 
+            .
             !venv/
+            ./frontend/build
+            
+    deploy:
+      needs: build-and-deploy
+      runs-on: ubuntu-latest
+      environment:
+        name: 'production'
+        url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+      steps:
+        - name: Download artifact from build job
+          uses: actions/download-artifact@v2
+          with:
+            name: python-app
+            path: .
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v2
-        with:
-          name: python-app
-          path: .
+        # Deploy Flask API and serve frontend using Gunicorn
+        - name: Deploy Flask API and serve frontend
+          uses: azure/webapps-deploy@v2
+          with:
+            app-name: 'gdv'
+            slot-name: 'production'
+            publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B84550D8AA8145DAAFC0D63FCBB08189 }}
+            package: .
+            startup-command: 'gunicorn app:app'
           
-      - name: 'Deploy to Azure Web App'
-        uses: azure/webapps-deploy@v2
-        id: deploy-to-webapp
-        with:
-          app-name: 'gdv'
-          slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_0F0CF79D388F49CEB91407276FC0DA21 }}
+        # Optional: Deploy the frontend separately to Azure Static Web App (if needed)
+        # - name: Deploy Frontend to Azure Static Web App
+        #   uses: azure/static-web-apps-deploy@v1
+        #   with:
+        #     app_location: 'frontend/build'
+        #     api_location: ''
+        #     output_location: ''
+        #     # Optional: Add app settings/environment variables here
+        #     # app_settings: |
+        #     #   {
+        #     #     "MY_SETTING": "my_value"
+        #     #   }
+        #     #   ^-- Note: The format of app_settings depends on your app's requirements.
+        #     #       Refer to the Azure Static Web Apps documentation for details.
+        #   env:
+        #     AZURE_STATIC_WEB_APPS_API_TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+        #     AZURE_STATIC_WEB_APPS_APP_LOCATION: 'frontend/build'
+        #     AZURE_STATIC_WEB_APPS_API_LOCATION: ''
+        #     AZURE_STATIC_WEB_APPS_OUTPUT_LOCATION: ''
+        #     AZURE_STATIC_WEB_APPS_APP_ARTIFACT_LOCATION: ''
