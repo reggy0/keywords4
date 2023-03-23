@@ -51,39 +51,29 @@ jobs:
             .
             !venv/
             ./frontend/build
-            deploy:
-  needs: build-and-deploy
-  runs-on: ubuntu-latest
-  environment:
-    name: 'production'
-    url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-  steps:
-    - name: Download artifact from build job
-      uses: actions/download-artifact@v2
-      with:
-        name: python-app
-        path: .
+            
+  deploy:
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: 'production'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v2
+        with:
+          name: python-app
+          path: .
 
-    # Deploy Flask API and serve frontend using Gunicorn
-    - name: Deploy Flask API and serve frontend
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: 'your-app-name'
-        slot-name: 'production'
-        publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
-        package: .
-        startup-command: 'gunicorn app:app'
-
-
-        # Deploy Flask API and serve frontend using Gunicorn
-        - name: Deploy Flask API and serve frontend
-          uses: azure/webapps-deploy@v2
-          with:
-            app-name: 'gdv'
-            slot-name: 'production'
-            publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B84550D8AA8145DAAFC0D63FCBB08189 }}
-            package: .
-            startup-command: 'gunicorn app:app'
+      # Deploy Flask API and serve frontend using Gunicorn
+      - name: Deploy Flask API and serve frontend
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: 'gdv'
+          slot-name: 'production'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B84550D8AA8145DAAFC0D63FCBB08189 }}
+          package: .
+          startup-command: 'gunicorn app:app'
           
         # Optional: Deploy the frontend separately to Azure Static Web App (if needed)
         # - name: Deploy Frontend to Azure Static Web App
