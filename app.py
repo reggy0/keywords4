@@ -5,7 +5,7 @@ from happytransformer import HappyGeneration, GENSettings
 
 
 # Initializing the flask app
-app = Flask(__name__,template_folder='template')
+app = Flask(__name__,template_folder='Template')
 
 happy_gen = HappyGeneration("GPT-NEO", "EleutherAI/gpt-neo-125M")
 
