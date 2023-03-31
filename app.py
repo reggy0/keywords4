@@ -1,13 +1,13 @@
 import re
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request,render_template
 from happytransformer import HappyGeneration, GENSettings
 
 
 
 # Initializing the flask app
-app = Flask(__name__,template_folder='templates')
+app = Flask(__name__,template_folder='template')
 
-happy_gen = HappyGeneration("GPT-NEO", "EleutherAI/gpt-neo-1.3B")
+happy_gen = HappyGeneration("GPT-NEO", "EleutherAI/gpt-neo-125M")
 
 training_cases = """Keywords: Canada, AI, fast
 Output: Canada's AI industry is growing fast. 
@@ -47,19 +47,6 @@ def generate_text():
      # Get input data from request
     data = request.json
     keywords = data['keywords']
-
-    # Check format of keywords and convert to list
-    if isinstance(keywords, str):
-        # Check if keywords are comma-separated
-        if "," in keywords:
-            keywords_list = keywords.split(",")
-        else:
-            # Check if keywords are bulleted list
-            keywords_list = re.findall(r"[\*•]\s*(\w+)", keywords)
-    elif isinstance(keywords, list):
-        keywords_list = keywords
-    else:
-        return jsonify({'error': 'Invalid format for keywords'})
     
     #Creating the prompt
     def create_prompt(training_cases, keywords):
