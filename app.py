@@ -67,4 +67,4 @@ def generate_text():
     return jsonify({"output_text": output_text})
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0')
+    app.run(debug=True)
